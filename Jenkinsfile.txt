@@ -1,0 +1,49 @@
+pipeline{
+	agent any
+	environment
+	{
+		def arti_path="/root/.jenkins/workspace/Job3/target"
+    		def tomcat_path="/root/tomcat/apache-tomcat-8.5.59/webapps"
+	}
+	stages
+	{
+    	stage('checkout')
+    	{
+        	steps
+		{
+        		git credentialsId: 'vrkavitha85', url: 'https://github.com/vrkavitha85/VBoxDevOps.git'
+		}
+    	}
+    	stage('Build')
+    	{
+        	steps
+		{
+        		sh '/root/apache-maven-3.6.3/bin/mvn clean package -f pom.xml'
+    		}
+	}
+    	stage('Archive')
+    	{
+        	steps
+		{
+        		archiveArtifacts artifacts: 'target/CounterWebApp-2.1-SNAPSHOT.war', followSymlinks: false
+    		}
+	}
+    	stage('Nexus')
+    	{
+        	steps
+		{
+        		nexusArtifactUploader artifacts: [[artifactId: 'CounterWebApp', classifier: '', file: '/root/.jenkins/workspace/Job3/target/CounterWebApp-2.1-SNAPSHOT.war', type: 'war']], credentialsId: 'nexus', groupId: 'com.my', nexusUrl: '192.168.122.1:8081/nexus', nexusVersion: 'nexus2', protocol: 'http', repository: 'snapshots', version: '2.1-SNAPSHOT'
+    		}
+    	}
+    	stage('Deploy')
+    	{  
+        	steps
+		{
+			dir(arti_path)
+        		{
+            	            sh 'cp CounterWebApp-2.1-SNAPSHOT.war tomcat_path'
+        		}
+        	}
+    	}
+	}
+}
